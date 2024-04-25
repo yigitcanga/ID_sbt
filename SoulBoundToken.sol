@@ -67,6 +67,10 @@ contract SoulBoundToken {
         revert("Your ID cannot be transfered");
     }
 
+    function transferFrom(address from, address to, uint256 tokenId) public {
+        revert("Your ID cannot be transfered");
+    }
+
     function burn(uint256 tokenId) external {
         require(ownerOf(tokenId) == msg.sender, "Only the owner of the ID can burn it.");
 
@@ -74,6 +78,7 @@ contract SoulBoundToken {
         if (previousOwner == address(0)) {
             revert ("ERC721NonexistentToken");
         }
+        delete tokenInfo[tokenId];
 
     }
 
