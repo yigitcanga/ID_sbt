@@ -3,6 +3,7 @@
 pragma solidity ^0.8.7;
 
 contract SoulBoundToken {
+    
 
     uint256 private _tokenIdCounter;
 
@@ -12,7 +13,7 @@ contract SoulBoundToken {
     }
 
     uint256 private currentTokenId;
-   
+    
     mapping(uint256 tokenId => address) private _owners;
     mapping(address owner => uint256) private _balances;
     mapping(uint256 id => address) private _idOwners;
@@ -39,7 +40,7 @@ contract SoulBoundToken {
     function mint(address _to, string memory _name, uint256 _id) public onlyMinter {
 
         require(_idOwnerOf(_id) == address(0), "Token ID already exists");
-       
+        
         uint256 newTokenId = currentTokenId;
         currentTokenId++;
 
@@ -61,7 +62,33 @@ contract SoulBoundToken {
     }
 
     // Mapping to store additional token information
-    mapping(uint256 => IDInfo) public tokenInfo;
+    mapping(uint256 => IDInfo) private tokenInfo;
+
+    function getTokenInfo(address owner) public view returns (IDInfo memory) {
+        uint256 tokenId = getTokenIdFromAddress(owner);
+        return tokenInfo[tokenId];
+    }
+
+    function verifyMessage(address _owner, bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (bool) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
+        address signer = ecrecover(prefixedHashMessage, _v, _r, _s);
+        return signer == _owner;
+    }
+
+    function getTokenInfoAfterSigning(address _owner, bytes32 _messageHash, uint8 _v, bytes32 _r, bytes32 _s) public view returns (IDInfo memory) {
+        require(verifyMessage(_owner, _messageHash, _v, _r, _s), "Signature verification failed");
+        return getTokenInfo(_owner);
+    }
+
+    function getTokenIdFromAddress(address owner) public view returns (uint256) {
+        for (uint256 i = 0; i < currentTokenId; i++) {
+            if (_ownerOf(i) == owner) {
+                return i;
+            }
+        
+        }
+    }
 
     function transferFrom(address from, address to, uint256 tokenId) public {
         revert("Your ID cannot be transfered");
@@ -116,11 +143,10 @@ contract SoulBoundToken {
         }
 
         _owners[tokenId] = to;
-        _idOwners[id]    = to;  
+        _idOwners[id]    = to;   
 
         return from;
     }
 
 
 }
-
